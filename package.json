@@ -1,0 +1,21 @@
+{
+  "name": "@doop/deploy",
+  "version": "0.0.0",
+  "description": "All purpose Doop server deployment script",
+  "main": "app.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MomsFriendlyDevCo/doop-deloy.git"
+  },
+  "keywords": [
+    "doop",
+    "deploy",
+    "devops"
+  ],
+  "author": "Matt Carter <m@ttcarter.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MomsFriendlyDevCo/doop-deloy/issues"
+  },
+  "homepage": "https://github.com/MomsFriendlyDevCo/doop-deloy#readme"
+}
