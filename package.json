@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "description": "All purpose Doop server deployment script",
   "main": "app.js",
+  "bin": {
+    "doop-deploy": "./app.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MomsFriendlyDevCo/doop-deloy.git"
@@ -17,5 +20,14 @@
   "bugs": {
     "url": "https://github.com/MomsFriendlyDevCo/doop-deloy/issues"
   },
-  "homepage": "https://github.com/MomsFriendlyDevCo/doop-deloy#readme"
+  "homepage": "https://github.com/MomsFriendlyDevCo/doop-deloy#readme",
+  "dependencies": {
+    "@momsfriendlydevco/exec": "^1.5.5",
+    "@momsfriendlydevco/template": "^1.1.2",
+    "chalk": "^4.1.1",
+    "commander": "^7.2.0",
+    "commander-extras": "^1.1.6",
+    "globby": "^11.0.3",
+    "lodash": "^4.17.21"
+  }
 }
