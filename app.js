@@ -47,6 +47,7 @@ cli = cli
 	.option('-f, --force', 'Force full deployments, do not automatically skip stages based on deltas')
 	.option('--branch [name]', 'Deploy a specific branch', 'master')
 	.option('--no-broadcast', 'Skip broadcast steps (`gulp predeploy` + `gulp postdeploy`)')
+	.option('--no-peers', 'Override setting of peer deployments')
 	.option('--dry-run', 'Dont actually perform any actions, just say what would run')
 	.option('--step', 'Step through each command that would be performed asking ahead of each run')
 	.parse(process.argv)
@@ -110,6 +111,8 @@ Promise.resolve()
 	// }}}
 	// Calculate peerDeploy {{{
 	.then(()=> {
+		if (!cli.peers) return utils.log.skipped('Peer profiles due to --no-peers');
+
 		var enabledPeers = new Set();
 
 		Object.entries(app.config.deploy.profiles)
