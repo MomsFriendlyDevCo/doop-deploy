@@ -103,6 +103,7 @@ Promise.resolve()
 	// }}}
 	// Bootstrap {{{
 	.then(()=> {
+		if (cli.dryRun) return;
 		// Exec defaults
 		exec.defaults.log = true;
 		exec.defaults.trim = true;
@@ -132,14 +133,16 @@ Promise.resolve()
 		if (enabledPeers.size > 0) utils.log.note('Peer profiles that will also deploy:', Array.from(enabledPeers).sort().join(', '));
 	})
 	// }}}
-	// Deploy selected profiles in series {{{
+	// DEPLOY EACH SITE: Deploy selected profiles in series {{{
 	.then(()=> Promise.allSeries(
 		_(app.config.deploy.profiles)
 		.keys()
 		.sortBy('sort')
 		.map(id => ()=> {
 			var deltas = {before: {}, after: {}}; // File stamps before and after `git pull`
+			var cleanEnv = process.env; // Clean environment copy
 
+			// Compute default profile {{{
 			var profile = _.defaultsDeep(app.config.deploy.profiles[id], {
 				title: _.startCase(id),
 				path: process.cwd(),
@@ -147,6 +150,8 @@ Promise.resolve()
 				branch: 'master',
 				sort: 10,
 				processes: 1,
+				env: {},
+				semver: false,
 				pm2Name: '${profile.id}-${process.alpha}',
 				pm2Names: [],
 				pm2Args: {
@@ -166,6 +171,7 @@ Promise.resolve()
 				profile.pm2Names = _.times(profile.processes, offset =>
 					template(profile.pm2Name, {
 						_,
+						semver,
 						profile,
 						process: {
 							offset,
@@ -179,6 +185,9 @@ Promise.resolve()
 				.then(()=> utils.log.heading(`Deploy profile "${id}"`))
 				// Change to profile path {{{
 				.then(()=> process.chdir(profile.path))
+				// }}}
+				// Merge profile.env {{{
+				.then(()=> process.env = {...process.env, ...profile.env})
 				// }}}
 				// Calculate BEFORE deltas {{{
 				.then(()=> !cli.force && utils.log.heading('Calculate pre-deploy deltas'))
@@ -265,7 +274,56 @@ Promise.resolve()
 					.catch(()=> { throw 'Failed `gulp postDeploy`' })
 				)
 				// }}}
-				.then(()=> consoleHeadingConfirmed(`Profile "${id}" successfully deployed`))
+				// Semver + push tag on complete {{{
+				.then(()=> {
+					if (!profile.semver) return;
+					if (
+						!cli.force
+						&& deltas.after.packages <= deltas.before.packages
+						&& deltas.after.backend <= deltas.before.backend
+						&& deltas.after.frontend <= deltas.before.frontend
+					) return utils.log.skipped('Skipping Semver version bump - nothing has changed - use `--force` if this is wrong');
+
+					utils.log.heading('Commiting Semver version');
+					var version = require('./package.json').version;
+					version = {
+						current: version,
+						major: semver.major(version),
+						minor: semver.minor(version),
+						patch: semver.patch(version),
+					};
+
+					switch (profile.semver) {
+						case true:
+						case 'patch':
+							version.patch++;
+							break;
+						case 'minor':
+							version.minor++;
+							break;
+						case 'major':
+							version.major++;
+							break;
+						default: throw new Error(`Unknown semver bump profile "${profile.semver}"`);
+					}
+					version.new = `${version.major}.${version.minor}.${version.patch}`;
+					version.tag = `v${version.new}`;
+
+					utils.log.note('Bumping version', version.current, '=>', version.new);
+
+					return Promise.resolve()
+						.then(()=> exec(['git', 'tag', version.tag])
+							.catch(()=> { throw `Failed \`git tag ${version.tag}\`` })
+						)
+						.then(()=> exec(['git', 'push', profile.repo, version.tag])
+							.catch(()=> { throw `Failed \`git push ${profile.repo} ${version.tag}\`` })
+						)
+				})
+				// }}}
+				// Restore original process.env {{{
+				.then(()=> process.env = cleanEnv)
+				// }}}
+				.then(()=> utils.log.confirmed(`Profile "${id}" successfully deployed`))
 		})
 		.value()
 	))
