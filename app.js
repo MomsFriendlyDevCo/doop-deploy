@@ -263,10 +263,40 @@ Promise.resolve()
 				// }}}
 				// Step: Backend restart (if cli.force || deltas mismatch) {{{
 				.then(()=> {
-					if (!cli.force || deltas.after.backend <= deltas.before.backend) return consoleHeadingSkipped('Restart backend processes');
-					consoleHeading('Restart backend processes');
-					return exec(['gulp', 'build'])
-						.catch(()=> { throw 'Failed `gulp build`' })
+					if (!cli.force || deltas.after.backend <= deltas.before.backend) return utils.log.skipped('Restart backend processes');
+					utils.log.heading('Restart backend processes');
+					return Promise.resolve()
+						.then(()=> exec(['pm2', 'show', profile.pm2Names[0]]) // Query PM2 if the first named process is actually running
+							.then(buf => true)
+							.catch(e => {
+								if (e.toString() == 'Non-zero exit code: 1') return false;
+								throw e;
+							})
+						)
+						.then(procExists => {
+							if (procExists) {
+								utils.log.note('PM2 processes already exists, restarting');
+								return exec(['pm2', 'restart', '--wait-ready', '--listen-timeout=10000', ...profile.pm2Names]);
+							} else {
+								utils.log.note('PM2 processes do not already exist, starting');
+								return Promise.allSeries(profile.pm2Names.map((pm2Name, offset) => ()=> {
+									var args = profile.pm2Args[pm2Name || 'default'];
+									if (!args) throw new Error(`Cannot find valid PM2 arguments for process "${pm2Name}"`);
+									args = args.map(arg => template(profile.pm2Name, {
+										_,
+										semver,
+										profile,
+										process: {
+											offset,
+											alpha: alphabet.substr(offset, 1),
+											name: pm2Name,
+										},
+									}));
+
+									return exec(['pm2', 'start', `--name=${pm2Name}`, '--time', 'server/index.js', '--', ...args]);
+								}));
+							}
+						})
 				})
 				// }}}
 				// Step: `gulp postdeploy` {{{
