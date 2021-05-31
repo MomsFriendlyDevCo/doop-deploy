@@ -1,6 +1,4 @@
-#!/bin/sh
-":" //# comment; exec /usr/bin/env node --no-warnings "$0" "$@"
-// ^^^ Weird hack to disable warnings - https://gist.github.com/rachidbch/5985f5fc8230b45c4b516ce1c14f0832
+#!/usr/bin/env node
 
 var _ = require('lodash');
 var alphabet = 'abcdefghijklmnopqrstuvwxyz';
