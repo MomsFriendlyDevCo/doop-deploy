@@ -45,6 +45,7 @@ Object.entries(app.config.deploy.profiles)
 // Footer options
 cli = cli
 	.option('-f, --force', 'Force full deployments, do not automatically skip stages based on deltas')
+	.option('--repo [name]', 'Repository to use', 'origin')
 	.option('--branch [name]', 'Deploy a specific branch', 'master')
 	.option('--no-broadcast', 'Skip broadcast steps (`gulp predeploy` + `gulp postdeploy`)')
 	.option('--no-peers', 'Override setting of peer deployments')
@@ -142,6 +143,8 @@ Promise.resolve()
 			var profile = _.defaultsDeep(app.config.deploy.profiles[id], {
 				title: _.startCase(id),
 				path: process.cwd(),
+				repo: 'origin',
+				branch: 'master',
 				sort: 10,
 				processes: 1,
 				pm2Name: '${profile.id}-${process.alpha}',
@@ -152,6 +155,11 @@ Promise.resolve()
 					],
 				},
 			});
+
+			// Let various CLI settings override the profile
+			if (cli.repo) profile.repo = cli.repo;
+			if (cli.branch) profile.branch = cli.branch;
+			// }}}
 
 			if (profile.pm2Name && _.isEmpty(profile.pm2Names)) {
 				if (profile.processes > 26) throw new Error('Must specify manual pm2Names configuration if processes > 26');
@@ -194,16 +202,18 @@ Promise.resolve()
 				// Step: Git branch switch {{{
 				.then(()=> exec(['git', 'branch', '--show-current'], {log: false, buffer: true})
 					.then(branchName => {
-						if (branchName != cli.branch) { // Need to switch branch
-							consoleHeading(`Switching to "${cli.branch}" branch`)
-							return exec(['git', 'switch', cli.branch])
-								.catch(()=> { throw 'Failed `git switch`' })
+						if (branchName != profile.branch) { // Need to switch branch
+							// Use a different branch to current - switch
+							utils.log.heading('Switching branch',  branchName, '=>', profile.branch);
+							return exec(['git', 'checkout', '-B', profile.branch, `${profile.repo}/${profile.branch}`])
+								.catch(()=> { throw `Failed \`git checkout -B ${cli.branch}\`` })
+						} else {
+							// Using same branch - force reset to repo state
+							utils.log.heading(`Resetting local state to ${profile.repo/profile.branch}`);
+							return exec(['git', 'checkout', '-B', profile.repo, profile.branch])
+								.catch(()=> { throw `Failed \`git checkout -B ${profile.repo} ${cli.branch}\`` })
 						}
 					})
-				)
-				.then(()=> consoleHeading('Pulling changes'))
-				.then(()=> exec(['git', 'pull', 'origin', cli.branch])
-					.catch(()=> { throw 'Failed `git pull`' })
 				)
 				// }}}
 				// Calculate AFTER deltas {{{
