@@ -103,7 +103,7 @@ Promise.resolve()
 				})
 			)
 
-		if (enabledPeers.size > 0) consoleNote('Peer profiles that will also deploy:', Array.from(enabledPeers).sort().join(', '));
+		if (enabledPeers.size > 0) utils.log.note('Peer profiles that will also deploy:', Array.from(enabledPeers).sort().join(', '));
 	})
 	// }}}
 	// Deploy selected profiles in series {{{
@@ -191,9 +191,9 @@ Promise.resolve()
 				.then(()=> {
 					if (cli.force) return;
 					utils.log.heading('Post-update deltas:');
-					utils.log.point('   *', colors.blue('Packages'), '-', deltas.after.packages > deltas.before.packages ? `has updated, needs ${colors.underline('reinstall')}` : 'no changes');
-					utils.log.point('   *', colors.blue('Backend '), '-', deltas.after.backend > deltas.before.backend ? `has updated, needs ${colors.underline('restart')}` : 'no changes');
-					utils.log.point('   *', colors.blue('Frontend'), '-', deltas.after.frontend > deltas.before.frontend ? `has updated, needs ${colors.underline('rebuild')}` : 'no changes');
+					utils.log.point(colors.blue('Packages'), '-', deltas.after.packages > deltas.before.packages ? `has updated, needs ${colors.underline('reinstall')}` : 'no changes');
+					utils.log.point(colors.blue('Backend '), '-', deltas.after.backend > deltas.before.backend ? `has updated, needs ${colors.underline('restart')}` : 'no changes');
+					utils.log.point(colors.blue('Frontend'), '-', deltas.after.frontend > deltas.before.frontend ? `has updated, needs ${colors.underline('rebuild')}` : 'no changes');
 					if (
 						deltas.after.packages <= deltas.before.packages
 						&& deltas.after.backend <= deltas.before.backend
