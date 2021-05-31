@@ -5,80 +5,13 @@ var alphabet = 'abcdefghijklmnopqrstuvwxyz';
 var colors = require('chalk');
 var commander = require('commander');
 var commanderExtras = require('commander-extras');
+var enquirer = require('enquirer');
 var exec = require('@momsfriendlydevco/exec');
 var glob = require('globby');
 var fs = require('fs');
-var readline = require('readline');
+var semver = require('semver');
 var template = require('@momsfriendlydevco/template');
-
-// Utility functions {{{
-/**
-* Return the newest file date within a glob expression
-* This is used to calculate file change deltas
-* @param {string} pattern Any valid globby expression
-* @returns {Promise<Date>} A promise which will eventually resolve with the newest file date within the glob expression or the date now
-*/
-var newestFile = pattern => Promise.resolve()
-	.then(()=> glob(pattern, {stats: true}))
-	.then(files => files.reduce((newest, file) =>
-		!newest || file.mtime > newest
-			? file.mtime // File is newer
-			: newest // Last scoped is still newer
-	))
-	.then(newest => newest || new Date())
-
-
-/**
-* Ask the user to confirm something via a Readline prompt, throwing if a negative answer
-* @param {string} message Question to ask the user, omit the '?' suffix as this is added automatically
-* @returns {Promise} A promise which will resolve only if the user answers 'yes'
-*/
-var cliConfirm = message => new Promise((resolve, reject) => {
-	var rl = readline.createInterface({
-		input: process.stdin,
-		output: process.stdout
-	});
-
-	rl.question(`${colors.white(message)} ${colors.blue('[y/N]')}?`, answer => {
-		if (/\s*y/i.test(answer)) {
-			resolve();
-		} else {
-			reject();
-		}
-
-		rl.close();
-	});
-});
-
-
-/**
-* Print a step of the deployment process using a bold heading
-* @param {*} [msg...] Messages to print
-*/
-consoleHeading = (...msg) => console.warn(colors.blue.bold('●', ...msg));
-
-
-/**
-* Print a step of the deployment process that was skipped
-* @param {*} [msg...] Messages to print
-*/
-consoleHeadingSkipped = (...msg) => console.warn(colors.grey.bold('✘', ...msg, '(skipped)'));
-
-
-/**
-* Print a step of the deployment process that was confirmed
-* @param {*} [msg...] Messages to print
-*/
-consoleHeadingConfirmed = (...msg) => console.warn(colors.green.bold('✔', ...msg));
-
-
-/**
-* Print a note about the development process
-* @param {*} [msg...] Messages to print
-*/
-consoleNote = (...msg) => console.warn(colors.grey.bold('-', ...msg));
-
-// }}}
+var utils = require('./lib/utils');
 
 // Bootstrap: Load Doop deploy config {{{
 try {
@@ -127,7 +60,7 @@ Promise.resolve()
 
 		if (cli.dryRun) // Override regular exec() with safe version if in dry run
 			exec = (cmd, options) => {
-				consoleNote('--dry-run mode, would exec', '`' + cmd.join(' ') + '`');
+				utils.log.note(' --dry-run mode, would exec', '`' + cmd.join(' ') + '`');
 				return Promise.resolve();
 			};
 	})
@@ -210,16 +143,16 @@ Promise.resolve()
 			}
 
 			return Promise.resolve()
-				.then(()=> consoleHeading(`Deploy profile "${id}"`))
+				.then(()=> utils.log.heading(`Deploy profile "${id}"`))
 				// Change to profile path {{{
 				.then(()=> process.chdir(profile.path))
 				// }}}
 				// Calculate BEFORE deltas {{{
-				.then(()=> !cli.force && consoleHeading('Calculate pre-deploy deltas'))
+				.then(()=> !cli.force && utils.log.heading('Calculate pre-deploy deltas'))
 				.then(()=> cli.force || Promise.all([
-					newestFile(['package.json', 'package-lock.json']).then(newest => deltas.before.packages = newest),
-					newestFile('**/*.doop').then(newest => deltas.before.backend = newest),
-					newestFile('**/*.vue').then(newest => deltas.before.frontend = newest),
+					utils.newestFile(['package.json', 'package-lock.json']).then(newest => deltas.before.packages = newest),
+					utils.newestFile('**/*.doop').then(newest => deltas.before.backend = newest),
+					utils.newestFile('**/*.vue').then(newest => deltas.before.frontend = newest),
 				]))
 				// }}}
 				// Step: `gulp predeploy` {{{
@@ -227,7 +160,13 @@ Promise.resolve()
 					.catch(()=> { throw 'Failed `gulp preDeploy`' })
 				)
 				// }}}
-				// Step: Git pull {{{
+				// Step: Fetch {{{
+				.then(()=> utils.log.heading(`Fetching changes from ${profile.repo}`))
+				.then(()=> exec(['git', 'fetch', profile.repo])
+					.catch(()=> { throw `Failed \`git fetch ${profile.repo}\`` })
+				)
+				// }}}
+				// Step: Git branch switch {{{
 				.then(()=> exec(['git', 'branch', '--show-current'], {log: false, buffer: true})
 					.then(branchName => {
 						if (branchName != cli.branch) { // Need to switch branch
@@ -243,37 +182,37 @@ Promise.resolve()
 				)
 				// }}}
 				// Calculate AFTER deltas {{{
-				.then(()=> !cli.force && consoleHeading('Calculate post-pull deltas'))
+				.then(()=> !cli.force && utils.log.heading('Calculate post-pull deltas'))
 				.then(()=> cli.force || Promise.all([
-					newestFile(['package.json', 'package-lock.json']).then(newest => deltas.after.packages = newest),
-					newestFile('**/*.doop').then(newest => deltas.after.backend = newest),
-					newestFile('**/*.vue').then(newest => deltas.after.frontend = newest),
+					utils.newestFile(['package.json', 'package-lock.json']).then(newest => deltas.after.packages = newest),
+					utils.newestFile('**/*.doop').then(newest => deltas.after.backend = newest),
+					utils.newestFile('**/*.vue').then(newest => deltas.after.frontend = newest),
 				]))
 				.then(()=> {
 					if (cli.force) return;
-					consoleHeading('Post-update deltas:');
-					console.warn('   *', colors.blue('Packages'), '-', deltas.after.packages > deltas.before.packages ? `has updated, needs ${colors.underline('reinstall')}` : 'no changes');
-					console.warn('   *', colors.blue('Backend '), '-', deltas.after.backend > deltas.before.backend ? `has updated, needs ${colors.underline('restart')}` : 'no changes');
-					console.warn('   *', colors.blue('Frontend'), '-', deltas.after.frontend > deltas.before.frontend ? `has updated, needs ${colors.underline('rebuild')}` : 'no changes');
+					utils.log.heading('Post-update deltas:');
+					utils.log.point('   *', colors.blue('Packages'), '-', deltas.after.packages > deltas.before.packages ? `has updated, needs ${colors.underline('reinstall')}` : 'no changes');
+					utils.log.point('   *', colors.blue('Backend '), '-', deltas.after.backend > deltas.before.backend ? `has updated, needs ${colors.underline('restart')}` : 'no changes');
+					utils.log.point('   *', colors.blue('Frontend'), '-', deltas.after.frontend > deltas.before.frontend ? `has updated, needs ${colors.underline('rebuild')}` : 'no changes');
 					if (
 						deltas.after.packages <= deltas.before.packages
 						&& deltas.after.backend <= deltas.before.backend
 						&& deltas.after.frontend <= deltas.before.frontend
-					) consoleNote('Nothing to do here - use --force if this is wrong');
+					) utils.log.note('Nothing to do here - use `--force` if this is wrong');
 				})
 				// }}}
 				// Step: NPM install (if cli.force || deltas mismatch) {{{
 				.then(()=> {
-					if (!cli.force || deltas.after.packages <= deltas.before.packages) return consoleHeadingSkipped('Clean-install NPM packages');
-					consoleHeading('Clean-install NPM packages');
+					if (!cli.force || deltas.after.packages <= deltas.before.packages) return utils.log.skipped('Clean-install NPM packages');
+					utils.log.heading('Clean-install NPM packages');
 					return exec(['npm', 'cleaninstall'])
 						.catch(()=> { throw 'Failed `npm ci`' })
 				})
 				// }}}
 				// Step: Frontend build (if cli.force || deltas mismatch) {{{
 				.then(()=> {
-					if (!cli.force || deltas.after.frontend <= deltas.before.frontend) return consoleHeadingSkipped('Build frontend');
-					consoleHeading('Build frontend');
+					if (!cli.force || deltas.after.frontend <= deltas.before.frontend) return utils.log.heading('Build frontend');
+					utils.log.heading('Build frontend');
 					return exec(['gulp', 'build'])
 						.catch(()=> { throw 'Failed `gulp build`' })
 				})
