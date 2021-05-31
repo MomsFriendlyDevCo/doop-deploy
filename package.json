@@ -31,7 +31,9 @@
     "chalk": "^4.1.1",
     "commander": "^7.2.0",
     "commander-extras": "^1.1.6",
+    "enquirer": "^2.3.6",
     "globby": "^11.0.3",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "semver": "^7.3.5"
   }
 }

@@ -48,6 +48,7 @@ cli = cli
 	.option('--branch [name]', 'Deploy a specific branch', 'master')
 	.option('--no-broadcast', 'Skip broadcast steps (`gulp predeploy` + `gulp postdeploy`)')
 	.option('--dry-run', 'Dont actually perform any actions, just say what would run')
+	.option('--step', 'Step through each command that would be performed asking ahead of each run')
 	.parse(process.argv)
 	.opts()
 // }}}
@@ -58,11 +59,32 @@ Promise.resolve()
 		if (cli.all) Object.keys(app.config.deploy.profiles)
 			.forEach(id => cli[id] = true);
 
-		if (cli.dryRun) // Override regular exec() with safe version if in dry run
+		if (cli.dryRun && cli.step) {
+			throw new Error('Cannot use --dry-run + --step, choose one or the other');
+		} else if (cli.dryRun) { // Override regular exec() with safe version if in dry run
 			exec = (cmd, options) => {
 				utils.log.note(' --dry-run mode, would exec', '`' + cmd.join(' ') + '`');
 				return Promise.resolve();
 			};
+		} else if (cli.step) { // Override regular exec() with wrapped enquirer() prompt
+			var realExec = exec;
+			exec = (cmd, options) => {
+				var cmdString = _.castArray(cmd).join(' ');
+				return enquirer.prompt({
+					type: 'confirm',
+					name: 'confirm',
+					message: `Confirm run> ${cmdString}`,
+				})
+					.then(({confirm}) => {
+						if (confirm) {
+							return realExec(cmd, options);
+						} else {
+							utils.log.skipped('Skip step:', cmdString);
+						}
+					})
+			};
+			exec.defaults = realExec.defaults;
+		}
 	})
 	// }}}
 	// Sanity checks {{{
