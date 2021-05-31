@@ -21,6 +21,10 @@
     "url": "https://github.com/MomsFriendlyDevCo/doop-deloy/issues"
   },
   "homepage": "https://github.com/MomsFriendlyDevCo/doop-deloy#readme",
+  "engineStrict": true,
+  "engines": {
+    "node": ">=14.8.0"
+  },
   "dependencies": {
     "@momsfriendlydevco/exec": "^1.5.5",
     "@momsfriendlydevco/template": "^1.1.2",
