@@ -4,6 +4,15 @@ All purpose Doop server deployment script.
 
 This project exposes an executable command line script `doop-deploy` which is used to deploy [Doop](https://github.com/MomsFriendlyDevCo/Doop) projects based on their configuration from `app.config.deploy.profiles`.
 
+**Features**:
+
+* Simple pull from git + build + restart PM2 deployment process
+* Peer deployments of other profiles if required
+* Special branch expressions to query + deploy to complex branches
+* File date deltas to skip unnecessary package reinstall, build, restart steps
+* Automatic handling of PM2 processes and custom names
+* Optional branch Semver + version bumping on successful deploy
+
 
 Configuration
 -------------
