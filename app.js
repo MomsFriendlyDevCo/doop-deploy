@@ -32,7 +32,7 @@ try {
 var cli = commander
 	.name('deploy')
 	.usage('<--all|--PROFILE> [other options]')
-	.description('Deploy Doop server profiles')
+	.description('Deploy Doop servers')
 	.option('--all', 'Deploy all server profiles');
 
 // Profiles
@@ -199,8 +199,8 @@ Promise.resolve()
 				]))
 				// }}}
 				// Step: `gulp predeploy` {{{
-				.then(()=> cli.broadcast && exec(['gulp', 'preDeploy'])
-					.catch(()=> { throw 'Failed `gulp preDeploy`' })
+				.then(()=> cli.broadcast && exec(['npm', 'run', 'build:pre'])
+					.catch(()=> { throw 'Failed `npm run build:pre`' })
 				)
 				// }}}
 				// Step: Fetch {{{
@@ -294,8 +294,8 @@ Promise.resolve()
 				.then(()=> {
 					if (!cli.force || deltas.after.frontend <= deltas.before.frontend) return utils.log.heading('Build frontend');
 					utils.log.heading('Build frontend');
-					return exec(['gulp', 'build'])
-						.catch(()=> { throw 'Failed `gulp build`' })
+					return exec(['npm', 'run', 'build'])
+						.catch(()=> { throw 'Failed `npm run build`' })
 				})
 				// }}}
 				// Step: Backend restart (if cli.force || deltas mismatch) {{{
@@ -337,8 +337,8 @@ Promise.resolve()
 				})
 				// }}}
 				// Step: `gulp postdeploy` {{{
-				.then(()=> cli.broadcast && exec(['gulp', 'postDeploy'])
-					.catch(()=> { throw 'Failed `gulp postDeploy`' })
+				.then(()=> cli.broadcast && exec(['npm', 'run', 'build:post'])
+					.catch(()=> { throw 'Failed `npm run build:post`' })
 				)
 				// }}}
 				// Semver + push tag on complete {{{

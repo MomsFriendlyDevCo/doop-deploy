@@ -70,6 +70,30 @@ The following variables are available when templating:
 Example config
 ==============
 
+Project config
+--------------
+The following is a recommended setup in `package.json`:
+
+
+```json
+{
+  "name": "acme-project",
+  "version": "1.0.0",
+  "description": "Project that does stuff",
+  "main": "server/index.js",
+  "scripts": {
+    "build": "gulp build",
+    "dev": "gulp serve",
+    "deploy": "doop-deploy",
+    "deploy:pre": "gulp preDeploy",
+    "deploy:post": "gulp postDeploy",
+    "start": "node server"
+  }
+}
+```
+
+
+
 Basic config
 ------------
 
