@@ -152,6 +152,7 @@ Promise.resolve()
 				processes: 1,
 				env: {},
 				semver: false,
+				semverPackage: true,
 				pm2Name: '${profile.id}-${process.alpha}',
 				pm2Names: [],
 				pm2Args: {
@@ -378,6 +379,21 @@ Promise.resolve()
 					utils.log.note('Bumping version', version.current, '=>', version.new);
 
 					return Promise.resolve()
+						.then(()=> { // Optionally bump package.json version (if profile.semverPackage)
+							if (!profile.semverPackage) return;
+							return Promise.resolve()
+								.then(()=> fs.promises.access('./package.json', fs.constants.R_OK | fs.constants.W_OK)
+									.catch(()=> { throw 'package.json is not writable to bump semver version' })
+								)
+								.then(()=> {
+									var package = require('./package.json');
+									package.version = version.new;
+									return fs.promises.writeFile('package.json', JSON.stringify(package.version, null, 2))
+								})
+								.then(()=> exec(['git', 'add', 'package.json'])
+									.catch(()=> { throw `Failed \`git add package.json\`` })
+								)
+						})
 						.then(()=> exec(['git', 'tag', version.tag])
 							.catch(()=> { throw `Failed \`git tag ${version.tag}\`` })
 						)

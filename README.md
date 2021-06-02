@@ -22,6 +22,7 @@ Configuration is read per-profile from the `app.config.deploy.profiles` object. 
 | `processes`       | `Number`             | `1`                                      | The number of PM2 processes to manage during a deployment                                                   |
 | `env`             | `Object`             | `{}`                                     | Environment variables to set when building (usually `NODE_ENV` needs to be set                              |
 | `semver`          | `Boolean` / `String` | `false`                                  | Whether to commit a new version completion, ENUM: 'patch' / `true`, 'minor', 'major'                        |
+| `semverPackage`   | `Boolean`            | `true`                                   | Whether to also bump the new version in `package.json`                                                      |
 | `pm2Name`         | `String`             | `"${profile.id}-${process.alpha}"`       | Templatable name of the PM2 processes                                                                       |
 | `pm2Names`        | `Array<String>`      | (Computed from pm2Name if not specified) | Computed templatable names or manual overrides if needed                                                    |
 | `pm2Args`         | `Object<Array>`      | `{}`                                     | Specific PM2 arguments per computed instance name                                                           |
