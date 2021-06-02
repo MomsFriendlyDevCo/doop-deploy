@@ -14,7 +14,8 @@ Configuration is read per-profile from the `app.config.deploy.profiles` object. 
 | `id`              | `String`             | (key)                                    | The key of the object, provided here for the template engine                                                |
 | `enabled`         | `Boolean`            | `true`                                   | Whether the profile is directly deployable, if disabled the profile can only be deployed via a `peerDeploy` |
 | `path`            | `String`             | (current path)                           | Change to this root directory before deploying a profile                                                    |
-| `repo`            | `String`             | `-repo=<REPO>` or `"origin"`             | Which source repository to use when deploying, `--repo` overrides the setting if present                    |
+| `repo`            | `String`             | `--repo=<REPO>` or `"origin"`            | Which source repository to use when deploying, `--repo` overrides the setting if present                    |
+| `branch`          | `String`             | `--branch=<BRANCH>` or `"master"`        | The branch to use when deploying, can be a complex expression - see Branch Expressions                      |
 | `title`           | `String`             | (key via _.startCase)                    | The human readable name of the deployment profile                                                           |
 | `sort`            | `Number`             | `10`                                     | Sort position if deploying multiple profiles (low-to-high)                                                  |
 | `peerDeploy`      | `Array` / `String`   | `""`                                     | Additional deployments implied if this profile is deployed                                                  |
@@ -30,6 +31,22 @@ Configuration is read per-profile from the `app.config.deploy.profiles` object. 
 **Notes:**
 * Profiles are always deployed according to `sort` order, even if specified by `peerDeploy`
 * Setting `semver` requires write access as it will try to commit the new version based on the result of the deployment (cherry-picks and all)
+
+
+Branch expressions
+------------------
+The `branch` property can be set to either:
+* A branch name (e.g. 'master', 'dev')
+* A tag (e.g. 'v1.2.3')
+* A patch hash (e.g. '36d050e', 'f9748544f569e38646a10e8aeecdd0fa47bba0ac')
+* One of the special expressions below
+
+The following branch expressions are also supported, they take the form `TYPE ARG1=VAL1,ARG2=VAL2,ARG3=VAL3` (e.g. `branch: tag semver=v1.x.x,sort=desc`)
+
+| Branch type | Arguments | Default  | Description                                                               |
+|-------------|-----------|----------|---------------------------------------------------------------------------|
+| `tag`       | `semver`  | `"*"`    | A semver expression to filter tags by, the first valid semver tag is used |
+|             | `sort`    | `"desc"` | Whether to sort tags asending, decending before filtering                 |
 
 
 String Templates

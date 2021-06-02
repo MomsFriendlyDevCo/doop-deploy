@@ -208,6 +208,42 @@ Promise.resolve()
 					.catch(()=> { throw `Failed \`git fetch ${profile.repo}\`` })
 				)
 				// }}}
+				// Step: Optional branch expression resolution {{{
+				.then(()=> {
+					if (!profile.branch.startsWith('!')) return; // Use absolute branch name
+					var branch = /^\!(?<tag>.+?)\s*(?<args>.+)$/?.groups;
+					if (!branch) throw new Error(`Error parsing branch syntax "${profile.branch}", should be of form "TYPE arg1=val1,arg2=val2..."`);
+					branch.split(/,/).forEach(arg => {
+						var [key, val] = arg.split(/=/, 2);
+						branch[key] = val;
+					})
+
+					switch (branch.tag) {
+						case 'tag':
+							branch = {
+								semver: '*',
+								sort: 'desc',
+								...branch,
+							};
+
+							utils.log.heading(`Fetching tags from ${profile.repo}`)
+							return exec(['git', 'tag', '-l'], {log: false, buffer: true})
+								.then(tagBuffer => tagBuffer.split(/\n/))
+								.then(tags => tags.sort())
+								.then(tags => branch.sort == 'asc' ? tags : tags.reverse())
+								.then(tags => tags.find(tag => semver.satisfies(tag, branch.semver)))
+								.then(matchingTag => {
+									if (!matchingTag) throw new Error(`Unable to satisfy tag semver expression "${branch.semver}"`);
+									utils.log.note(`Setting branch to latest tag ${matchingTag}`)
+									profile.branch = matchingTag;
+								})
+								.then(()=> { throw 'NOPE' })
+							break;
+						default:
+							throw new Error(`Unknown special branch type "${profile.branch}"`);
+					}
+				})
+				// }}}
 				// Step: Git branch switch {{{
 				.then(()=> exec(['git', 'branch', '--show-current'], {log: false, buffer: true})
 					.then(branchName => {
