@@ -51,8 +51,10 @@ cli = cli
 	.option('--branch [name]', 'Deploy a specific branch', 'master')
 	.option('--no-broadcast', 'Skip broadcast steps (`gulp predeploy` + `gulp postdeploy`)')
 	.option('--no-peers', 'Override setting of peer deployments')
+	.option('--no-force-color', 'Do not attempt to force color mode before running')
 	.option('--dry-run', 'Dont actually perform any actions, just say what would run')
 	.option('--step', 'Step through each command that would be performed asking ahead of each run')
+	.option('--unattended', 'Implies: --no-force-color')
 	.parse(process.argv)
 	.opts()
 // }}}
@@ -62,6 +64,9 @@ Promise.resolve()
 	.then(()=> {
 		if (cli.all) Object.keys(app.config.deploy.profiles)
 			.forEach(id => cli[id] = true);
+
+		if (cli.unattended)
+			cli.forceColor = false;
 
 		if (cli.dryRun && cli.step) {
 			throw new Error('Cannot use --dry-run + --step, choose one or the other');
@@ -106,11 +111,14 @@ Promise.resolve()
 	// Bootstrap {{{
 	.then(()=> {
 		if (cli.dryRun) return;
+
 		// Exec defaults
 		exec.defaults.log = true;
 		exec.defaults.trim = true;
-		exec.defaults.prefixStdout = '->';
-		exec.defaults.prefixStderr = colors.red.bold('!>');
+		exec.defaults.prefixStdout = chalk.bgWhite.blue('->');
+		exec.defaults.prefixStderr = chalk.bgRed.white.bold('!>');
+
+		if (cli.forceColors) process.env.FORCE_COLOR = 3;
 	})
 	// }}}
 	// Calculate peerDeploy {{{
