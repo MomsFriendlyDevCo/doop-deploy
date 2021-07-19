@@ -198,9 +198,9 @@ Promise.resolve()
 					utils.newestFile('**/*.vue').then(newest => deltas.before.frontend = newest),
 				]))
 				// }}}
-				// Step: `gulp predeploy` {{{
-				.then(()=> cli.broadcast && exec(['npm', 'run', 'build:pre'])
-					.catch(()=> { throw 'Failed `npm run build:pre`' })
+				// Step: `npm run deploy:pre` {{{
+				.then(()=> cli.broadcast && exec(['npm', 'run', 'deploy:pre'])
+					.catch(()=> { throw 'Failed `npm run deploy:pre`' })
 				)
 				// }}}
 				// Step: Fetch {{{
@@ -336,9 +336,9 @@ Promise.resolve()
 						})
 				})
 				// }}}
-				// Step: `gulp postdeploy` {{{
-				.then(()=> cli.broadcast && exec(['npm', 'run', 'build:post'])
-					.catch(()=> { throw 'Failed `npm run build:post`' })
+				// Step: `npm run deploy:post` {{{
+				.then(()=> cli.broadcast && exec(['npm', 'run', 'deploy:post'])
+					.catch(()=> { throw 'Failed `npm run deploy:post`' })
 				)
 				// }}}
 				// Semver + push tag on complete {{{
