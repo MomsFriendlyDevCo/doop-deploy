@@ -18,6 +18,7 @@ try {
 	process.env.DOOP_IGNORE_CMD_ARGS = 1; // Tell Doop we're loading it as a sub-process
 	// FIXME: add 'node_modules/@doop/deploy/package.json'
 	if (glob.sync(['package.json', 'config/index.js']).length != 2) throw `Cannot determine project root directory from CWD: ${process.cwd()}`;
+	process.env.DOOP_QUIET = 1;
 	require(`${process.cwd()}/app/app.backend`);
 	if (!global.app) throw ('No global `app` object found');
 	if (!app.config.deploy.profiles) throw ('Doop deploy config not found in app.config.deploy.profiles');
