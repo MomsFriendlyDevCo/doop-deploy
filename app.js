@@ -265,7 +265,7 @@ Promise.resolve()
 								.catch(()=> { throw `Failed \`git checkout -B ${cli.branch}\`` })
 						} else {
 							// Using same branch - force reset to repo state
-							utils.log.heading(`Resetting local state to ${profile.repo/profile.branch}`);
+							utils.log.heading(`Resetting local state to ${profile.repo}/${profile.branch}`);
 							return exec(['git', 'checkout', '-B', profile.repo, profile.branch])
 								.catch(()=> { throw `Failed \`git checkout -B ${profile.repo} ${cli.branch}\`` })
 						}
