@@ -144,6 +144,23 @@ Promise.resolve()
 		if (enabledPeers.size > 0) utils.log.note('Peer profiles that will also deploy:', Array.from(enabledPeers).sort().join(', '));
 	})
 	// }}}
+	// Calculate peerDeny {{{
+	.then(()=> {
+		var enabledPeers = new Set(Object.entries(app.config.deploy.profiles)
+			.filter(([id, profile]) => profile.enabled)
+			.map(([id, profile]) => profile)
+		);
+
+		Object.entries(app.config.deploy.profiles)
+			.filter(([id, profile]) => profile.enabled && profile.peerDeny)
+			.some(([id, profile]) =>
+				_.castArray(profile.peerDeny || []).some(peer => {
+					if (enabledPeers.has(peer))
+						throw `Profile "${id}" cannot be deployed alongside "${peer}" - its peerDeny setting forbids this`;
+				})
+			)
+	})
+	// }}}
 	// DEPLOY EACH SITE: Deploy selected profiles in series {{{
 	.then(()=> Promise.allSeries(
 		_(app.config.deploy.profiles)

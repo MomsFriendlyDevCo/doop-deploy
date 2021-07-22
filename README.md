@@ -28,6 +28,7 @@ Configuration is read per-profile from the `app.config.deploy.profiles` object. 
 | `title`           | `String`             | (key via _.startCase)                    | The human readable name of the deployment profile                                                           |
 | `sort`            | `Number`             | `10`                                     | Sort position if deploying multiple profiles (low-to-high)                                                  |
 | `peerDeploy`      | `Array` / `String`   | `""`                                     | Additional deployments implied if this profile is deployed                                                  |
+| `peerDeny`        | `Array` / `String`   | `""`                                     | Deployments that are not allowed alongside this profile - an error is raised if both are attempted at once  |
 | `processes`       | `Number`             | `1`                                      | The number of PM2 processes to manage during a deployment                                                   |
 | `env`             | `Object`             | `{}`                                     | Environment variables to set when building (usually `NODE_ENV` needs to be set                              |
 | `semver`          | `Boolean` / `String` | `false`                                  | Whether to commit a new version completion, ENUM: 'patch' / `true`, 'minor', 'major'                        |
