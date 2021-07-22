@@ -1,0 +1,20 @@
+#!/bin/bash
+# Bash wrapper around @doop/deploy
+# This script is designed to be symlinked from anywhere for simple deployment usage
+# When executed the script will determine its real path, change to the project directory then run `npm run deploy --` as normal
+#
+# @example Create the `deploy` script in the home directory
+# cd ~
+# ln -s /path/to/project/node_modules/@doop/deploy/deploy deploy
+# ./deploy --help
+
+
+SCRIPTPATH=`dirname "$(realpath $0)"`
+PROJECTPATH=`realpath "$SCRIPTPATH/../../.."`
+
+if [ ! -f "$PROJECTPATH/package.json" ]; then
+	echo "Deploy script in "${SCRIPTPATH}" is not located inside a project with a valid package.json file"
+fi
+
+cd "$PROJECTPATH"
+npm run deploy -- "$@"
