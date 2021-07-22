@@ -16,9 +16,10 @@ var utils = require('./lib/utils');
 // Bootstrap: Load Doop deploy config {{{
 try {
 	process.env.DOOP_IGNORE_CMD_ARGS = 1; // Tell Doop we're loading it as a sub-process
+	process.env.DOOP_QUIET = 1; // Tell Doop not to output debugging messages
+
 	// FIXME: add 'node_modules/@doop/deploy/package.json'
 	if (glob.sync(['package.json', 'config/index.js']).length != 2) throw `Cannot determine project root directory from CWD: ${process.cwd()}`;
-	process.env.DOOP_QUIET = 1;
 	require(`${process.cwd()}/app/app.backend`);
 	if (!global.app) throw ('No global `app` object found');
 	if (!app.config.deploy.profiles) throw ('Doop deploy config not found in app.config.deploy.profiles');
@@ -49,7 +50,7 @@ cli = cli
 	.option('-f, --force', 'Force full deployments, do not automatically skip stages based on deltas')
 	.option('--repo [name]', 'Repository to use', 'origin')
 	.option('--branch [name]', 'Deploy a specific branch', 'master')
-	.option('--no-broadcast', 'Skip broadcast steps (`gulp predeploy` + `gulp postdeploy`)')
+	.option('--no-broadcast', 'Skip broadcast steps (`npm run deploy:pre` + `npm run deploy:post`)')
 	.option('--no-peers', 'Override setting of peer deployments')
 	.option('--no-force-color', 'Do not attempt to force color mode before running')
 	.option('--dry-run', 'Dont actually perform any actions, just say what would run')
