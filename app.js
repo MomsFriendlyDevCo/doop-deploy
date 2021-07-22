@@ -218,6 +218,14 @@ Promise.resolve()
 				// Merge profile.env {{{
 				.then(()=> process.env = {...process.env, ...profile.env})
 				// }}}
+				// Defer to profile.script if specified {{{
+				.then(()=> {
+					if (!process.script) return;
+					return exec(process.script)
+						.then(()=> { throw 'SKIP' }) // Stop promise chain and exit
+						.catch(()=> { throw `Error running script \`${process.script}\`` })
+				})
+				// }}}
 				// Calculate BEFORE deltas {{{
 				.then(()=> !cli.force && utils.log.heading('Calculate pre-deploy deltas'))
 				.then(()=> cli.force || Promise.all([
@@ -433,7 +441,13 @@ Promise.resolve()
 				// Restore original process.env {{{
 				.then(()=> process.env = cleanEnv)
 				// }}}
+				// End / Catch {{{
 				.then(()=> utils.log.confirmed(`Profile "${id}" successfully deployed`))
+				.catch(e => {
+					if (e === 'SKIP') return; // Ignore normal exit from promise chain
+					throw e;
+				})
+				// }}}
 		})
 		.value()
 	))

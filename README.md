@@ -23,6 +23,7 @@ Configuration is read per-profile from the `app.config.deploy.profiles` object. 
 | `id`              | `String`             | (key)                                    | The key of the object, provided here for the template engine                                                |
 | `enabled`         | `Boolean`            | `true`                                   | Whether the profile is directly deployable, if disabled the profile can only be deployed via a `peerDeploy` |
 | `path`            | `String`             | (current path)                           | Change to this root directory before deploying a profile                                                    |
+| `script`          | `Array` / `String`   |                                          | Script or other executable which will be run instead of any of the below processes                          |
 | `repo`            | `String`             | `--repo=<REPO>` or `"origin"`            | Which source repository to use when deploying, `--repo` overrides the setting if present                    |
 | `branch`          | `String`             | `--branch=<BRANCH>` or `"master"`        | The branch to use when deploying, can be a complex expression - see Branch Expressions                      |
 | `title`           | `String`             | (key via _.startCase)                    | The human readable name of the deployment profile                                                           |
@@ -42,6 +43,8 @@ Configuration is read per-profile from the `app.config.deploy.profiles` object. 
 **Notes:**
 * Profiles are always deployed according to `sort` order, even if specified by `peerDeploy`
 * Setting `semver` requires write access as it will try to commit the new version based on the result of the deployment (cherry-picks and all)
+* If `script` is specified it is deferred to instead of any other deploy process - no fetching, building or restarts are performed - only the script is run
+* When using `script` only the `path` and `env` settings are processed - all other settings are ignored
 
 
 Branch expressions
