@@ -115,8 +115,8 @@ Promise.resolve()
 		// Exec defaults
 		exec.defaults.log = true;
 		exec.defaults.trim = true;
-		exec.defaults.prefixStdout = chalk.bgWhite.blue('->');
-		exec.defaults.prefixStderr = chalk.bgRed.white.bold('!>');
+		exec.defaults.prefixStdout = colors.bgWhite.blue('->');
+		exec.defaults.prefixStderr = colors.bgRed.white.bold('!>');
 
 		if (cli.forceColors) process.env.FORCE_COLOR = 3;
 	})
