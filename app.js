@@ -162,7 +162,7 @@ Promise.resolve()
 	})
 	// }}}
 	// DEPLOY EACH SITE: Deploy selected profiles in series {{{
-	.then(()=> Promise.allSeries(
+	.then(()=> utils.promiseSeries(
 		_(app.config.deploy.profiles)
 		.keys()
 		.sortBy('sort')
@@ -352,7 +352,7 @@ Promise.resolve()
 								return exec(['pm2', 'restart', '--wait-ready', '--listen-timeout=10000', ...profile.pm2Names]);
 							} else {
 								utils.log.note('PM2 processes do not already exist, starting');
-								return Promise.allSeries(profile.pm2Names.map((pm2Name, offset) => ()=> {
+								return utils.promiseSeries(profile.pm2Names.map((pm2Name, offset) => ()=> {
 									var args = profile.pm2Args[pm2Name || 'default'];
 									if (!args) throw new Error(`Cannot find valid PM2 arguments for process "${pm2Name}"`);
 									args = args.map(arg => template(profile.pm2Name, {
