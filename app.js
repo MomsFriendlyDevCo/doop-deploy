@@ -235,6 +235,7 @@ Promise.resolve()
 				]))
 				// }}}
 				// Step: `npm run deploy:pre` {{{
+				.then(()=> cli.broadcast && utils.log.heading('Running pre-deploy'))
 				.then(()=> cli.broadcast && exec(['npm', 'run', 'deploy:pre'])
 					.catch(()=> { throw 'Failed `npm run deploy:pre`' })
 				)
@@ -298,8 +299,8 @@ Promise.resolve()
 					})
 				)
 				// }}}
-				// Calculate AFTER deltas {{{
-				.then(()=> !cli.force && utils.log.heading('Calculate post-pull deltas'))
+				// Calculate post deltas {{{
+				.then(()=> !cli.force && utils.log.heading('Calculate post deltas'))
 				.then(()=> cli.force || Promise.all([
 					utils.newestFile(['package.json', 'package-lock.json']).then(newest => deltas.after.packages = newest),
 					utils.newestFile('**/*.doop').then(newest => deltas.after.backend = newest),
@@ -373,6 +374,7 @@ Promise.resolve()
 				})
 				// }}}
 				// Step: `npm run deploy:post` {{{
+				.then(()=> cli.broadcast && utils.log.heading('Running post-deploy'))
 				.then(()=> cli.broadcast && exec(['npm', 'run', 'deploy:post'])
 					.catch(()=> { throw 'Failed `npm run deploy:post`' })
 				)
