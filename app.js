@@ -56,6 +56,7 @@ cli = cli
 	.option('--dry-run', 'Dont actually perform any actions, just say what would run')
 	.option('--step', 'Step through each command that would be performed asking ahead of each run')
 	.option('--unattended', 'Implies: --no-force-color')
+	.option('--verbose, -v', 'Be verbose with output - specify multiple times to increase verbosity', (t, v) => v+1, 0)
 	.parse(process.argv)
 	.opts()
 // }}}
@@ -106,7 +107,9 @@ Promise.resolve()
 	})
 	// }}}
 	// Doop bootstrap essential {{{
+	.then(()=> cli.verbose > 0 && utils.log.verbose('Setting up App core'))
 	.then(()=> app.setup())
+	.then(()=> cli.verbose > 0 && utils.log.verbose('Emitting "essencial" to app core'))
 	.then(()=> app.emit('essencial'))
 	// }}}
 	// Bootstrap {{{
@@ -125,6 +128,8 @@ Promise.resolve()
 	// Calculate peerDeploy {{{
 	.then(()=> {
 		if (!cli.peers) return utils.log.skipped('Peer profiles due to --no-peers');
+
+		if (cli.verbose > 0) utils.log.verbose('Calculating peer deployments')
 
 		var enabledPeers = new Set();
 
@@ -146,6 +151,8 @@ Promise.resolve()
 	// }}}
 	// Calculate peerDeny {{{
 	.then(()=> {
+		if (cli.verbose > 0) utils.log.verbose('Calculating peer denies')
+
 		var enabledPeers = new Set(Object.entries(app.config.deploy.profiles)
 			.filter(([id, profile]) => profile.enabled)
 			.map(([id, profile]) => profile)
@@ -221,6 +228,8 @@ Promise.resolve()
 				// Defer to profile.script if specified {{{
 				.then(()=> {
 					if (!process.script) return;
+					if (cli.verbose > 0) utils.log.verbose(`Defering to deployment script "${process.script}"`)
+
 					return exec(process.script)
 						.then(()=> { throw 'SKIP' }) // Stop promise chain and exit
 						.catch(()=> { throw `Error running script \`${process.script}\`` })
@@ -234,6 +243,7 @@ Promise.resolve()
 					utils.newestFile('**/*.vue').then(newest => deltas.before.frontend = newest),
 				]))
 				// }}}
+				.then(()=> cli.verbose > 2 && utils.log.verbose('Deployment deltas', deltas))
 				// Step: `npm run deploy:pre` {{{
 				.then(()=> cli.broadcast && utils.log.heading('Running pre-deploy'))
 				.then(()=> cli.broadcast && exec(['npm', 'run', 'deploy:pre'])
@@ -310,8 +320,20 @@ Promise.resolve()
 					if (cli.force) return;
 					utils.log.heading('Post-update deltas:');
 					utils.log.point(colors.blue('Packages'), '-', deltas.after.packages > deltas.before.packages ? `has updated, needs ${colors.underline('reinstall')}` : 'no changes');
+					if (cli.verbose > 1) {
+						utils.log.verbose(' Pre-deploy=', deltas.before.packages);
+						utils.log.verbose('Post-deploy=', deltas.after.packages);
+					}
 					utils.log.point(colors.blue('Backend '), '-', deltas.after.backend > deltas.before.backend ? `has updated, needs ${colors.underline('restart')}` : 'no changes');
+					if (cli.verbose > 1) {
+						utils.log.verbose(' Pre-deploy=', deltas.before.backend);
+						utils.log.verbose('Post-deploy=', deltas.after.backend);
+					}
 					utils.log.point(colors.blue('Frontend'), '-', deltas.after.frontend > deltas.before.frontend ? `has updated, needs ${colors.underline('rebuild')}` : 'no changes');
+					if (cli.verbose > 1) {
+						utils.log.verbose(' Pre-deploy=', deltas.before.frontend);
+						utils.log.verbose('Post-deploy=', deltas.after.frontend);
+					}
 					if (
 						deltas.after.packages <= deltas.before.packages
 						&& deltas.after.backend <= deltas.before.backend
@@ -455,9 +477,11 @@ Promise.resolve()
 	))
 	// }}}
 	// End {{{
+	.then(()=> cli.verbose > 0 && utils.log.verbose('Terminate successfully'))
 	.then(()=> process.exit(0))
 	.catch(e => {
 		console.warn(colors.red.bold('DEPLOY ERROR:'), e.toString());
+		if (cli.verbose > 1) utils.log.verbose('Raw error trace:', e);
 		process.exit(1);
 	})
 	// }}}
