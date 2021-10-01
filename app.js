@@ -248,11 +248,11 @@ Promise.resolve()
 				.then(()=> cli.verbose > 2 && utils.log.verbose('Deployment deltas', deltas))
 				// Step: `npm run deploy:pre` {{{
 				.then(()=> {
-					var package = require('./package.json');
+					var package = require(`${profile.path}/package.json`);
 					if (!package?.scripts['deploy:pre']) return; // No pre-deploy script to run
 					if (!cli.broadcast) return utils.log.skipped('Running pre-deploy');
 
-					utils.log.heading('Running pre-deploy'));
+					utils.log.heading('Running pre-deploy');
 					return cli.broadcast && exec(['npm', 'run', 'deploy:pre'])
 						.catch(()=> { throw 'Failed `npm run deploy:pre`' })
 				})
@@ -404,11 +404,11 @@ Promise.resolve()
 				// }}}
 				// Step: `npm run deploy:post` {{{
 				.then(()=> {
-					var package = require('./package.json');
+					var package = require(`${profile.path}/package.json`);
 					if (!package?.scripts['deploy:post']) return; // No pre-deploy script to run
-					if (!cli.broadcast) return utils.log.skipped('Running pre-deploy');
+					if (!cli.broadcast) return utils.log.skipped('Running post-deploy');
 
-					utils.log.heading('Running pre-deploy'));
+					utils.log.heading('Running post-deploy');
 					return cli.broadcast && exec(['npm', 'run', 'deploy:post'])
 						.catch(()=> { throw 'Failed `npm run deploy:post`' })
 				})
