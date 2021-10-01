@@ -350,7 +350,7 @@ Promise.resolve()
 				// }}}
 				// Step: NPM install (if cli.force || deltas mismatch) {{{
 				.then(()=> {
-					if (!cli.force || deltas.after.packages <= deltas.before.packages) return utils.log.skipped('Clean-install NPM packages');
+					if (!cli.force && deltas.after.packages == deltas.before.packages) return utils.log.skipped('Clean-install NPM packages');
 					utils.log.heading('Clean-install NPM packages');
 					return exec(['npm', 'cleaninstall'])
 						.catch(()=> { throw 'Failed `npm ci`' })
@@ -358,7 +358,7 @@ Promise.resolve()
 				// }}}
 				// Step: Frontend build (if cli.force || deltas mismatch) {{{
 				.then(()=> {
-					if (!cli.force || deltas.after.frontend <= deltas.before.frontend) return utils.log.heading('Build frontend');
+					if (!cli.force && deltas.after.frontend == deltas.before.frontend) return utils.log.heading('Build frontend');
 					utils.log.heading('Build frontend');
 					return exec(['npm', 'run', 'build'])
 						.catch(()=> { throw 'Failed `npm run build`' })
@@ -366,7 +366,7 @@ Promise.resolve()
 				// }}}
 				// Step: Backend restart (if cli.force || deltas mismatch) {{{
 				.then(()=> {
-					if (!cli.force || deltas.after.backend <= deltas.before.backend) return utils.log.skipped('Restart backend processes');
+					if (!cli.force && deltas.after.backend == deltas.before.backend) return utils.log.skipped('Restart backend processes');
 					utils.log.heading('Restart backend processes');
 					return Promise.resolve()
 						.then(()=> exec(['pm2', 'show', profile.pm2Names[0]]) // Query PM2 if the first named process is actually running
@@ -418,9 +418,9 @@ Promise.resolve()
 					if (!profile.semver) return;
 					if (
 						!cli.force
-						&& deltas.after.packages <= deltas.before.packages
-						&& deltas.after.backend <= deltas.before.backend
-						&& deltas.after.frontend <= deltas.before.frontend
+						&& deltas.after.packages == deltas.before.packages
+						&& deltas.after.backend == deltas.before.backend
+						&& deltas.after.frontend == deltas.before.frontend
 					) return utils.log.skipped('Skipping Semver version bump - nothing has changed - use `--force` if this is wrong');
 
 					utils.log.heading('Commiting Semver version');
