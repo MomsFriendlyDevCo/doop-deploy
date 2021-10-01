@@ -352,8 +352,8 @@ Promise.resolve()
 				.then(()=> {
 					if (!cli.force && deltas.after.packages == deltas.before.packages) return utils.log.skipped('Clean-install NPM packages');
 					utils.log.heading('Clean-install NPM packages');
-					return exec(['npm', 'cleaninstall'])
-						.catch(()=> { throw 'Failed `npm ci`' })
+					return exec(['npm', 'clean-install'])
+						.catch(()=> { throw 'Failed `npm clean-install`' })
 				})
 				// }}}
 				// Step: Frontend build (if cli.force || deltas mismatch) {{{
