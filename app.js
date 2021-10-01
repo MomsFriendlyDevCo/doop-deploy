@@ -56,7 +56,7 @@ cli = cli
 	.option('--dry-run', 'Dont actually perform any actions, just say what would run')
 	.option('--step', 'Step through each command that would be performed asking ahead of each run')
 	.option('--unattended', 'Implies: --no-force-color')
-	.option('--verbose, -v', 'Be verbose with output - specify multiple times to increase verbosity', (t, v) => v+1, 0)
+	.option('-v, --verbose', 'Be verbose with output - specify multiple times to increase verbosity', (t, v) => v+1, 0)
 	.parse(process.argv)
 	.opts()
 // }}}
