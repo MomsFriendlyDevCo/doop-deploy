@@ -239,8 +239,8 @@ Promise.resolve()
 				.then(()=> !cli.force && utils.log.heading('Calculate pre-deploy deltas'))
 				.then(()=> cli.force || Promise.all([
 					utils.newestFile(['package.json', 'package-lock.json']).then(newest => deltas.before.packages = newest),
-					utils.newestFile('**/*.doop').then(newest => deltas.before.backend = newest),
 					utils.newestFile('**/*.vue').then(newest => deltas.before.frontend = newest),
+					utils.newestFile('**/*.doop').then(newest => deltas.before.backend = newest),
 				]))
 				// }}}
 				.then(()=> cli.verbose > 2 && utils.log.verbose('Deployment deltas', deltas))
@@ -313,8 +313,8 @@ Promise.resolve()
 				.then(()=> !cli.force && utils.log.heading('Calculate post deltas'))
 				.then(()=> cli.force || Promise.all([
 					utils.newestFile(['package.json', 'package-lock.json']).then(newest => deltas.after.packages = newest),
-					utils.newestFile('**/*.doop').then(newest => deltas.after.backend = newest),
 					utils.newestFile('**/*.vue').then(newest => deltas.after.frontend = newest),
+					utils.newestFile('**/*.doop').then(newest => deltas.after.backend = newest),
 				]))
 				.then(()=> {
 					if (cli.force) return;
@@ -324,15 +324,15 @@ Promise.resolve()
 						utils.log.verbose(' Pre-deploy=', deltas.before.packages);
 						utils.log.verbose('Post-deploy=', deltas.after.packages);
 					}
-					utils.log.point(colors.blue('Backend '), '-', deltas.after.backend > deltas.before.backend ? `has updated, needs ${colors.underline('restart')}` : 'no changes');
-					if (cli.verbose > 1) {
-						utils.log.verbose(' Pre-deploy=', deltas.before.backend);
-						utils.log.verbose('Post-deploy=', deltas.after.backend);
-					}
 					utils.log.point(colors.blue('Frontend'), '-', deltas.after.frontend > deltas.before.frontend ? `has updated, needs ${colors.underline('rebuild')}` : 'no changes');
 					if (cli.verbose > 1) {
 						utils.log.verbose(' Pre-deploy=', deltas.before.frontend);
 						utils.log.verbose('Post-deploy=', deltas.after.frontend);
+					}
+					utils.log.point(colors.blue('Backend '), '-', deltas.after.backend > deltas.before.backend ? `has updated, needs ${colors.underline('restart')}` : 'no changes');
+					if (cli.verbose > 1) {
+						utils.log.verbose(' Pre-deploy=', deltas.before.backend);
+						utils.log.verbose('Post-deploy=', deltas.after.backend);
 					}
 					if (
 						deltas.after.packages <= deltas.before.packages
