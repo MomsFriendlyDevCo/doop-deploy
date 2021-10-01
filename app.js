@@ -221,6 +221,7 @@ Promise.resolve()
 			return Promise.resolve()
 				.then(()=> utils.log.heading(`Deploy profile "${id}"`))
 				// Change to profile path {{{
+				.then(()=> cli.verbose > 0 && utils.log.verbose(`chdir "${profile.path}"`))
 				.then(()=> process.chdir(profile.path))
 				// }}}
 				// Merge profile.env {{{
@@ -246,10 +247,15 @@ Promise.resolve()
 				// }}}
 				.then(()=> cli.verbose > 2 && utils.log.verbose('Deployment deltas', deltas))
 				// Step: `npm run deploy:pre` {{{
-				.then(()=> cli.broadcast && utils.log.heading('Running pre-deploy'))
-				.then(()=> cli.broadcast && exec(['npm', 'run', 'deploy:pre'])
-					.catch(()=> { throw 'Failed `npm run deploy:pre`' })
-				)
+				.then(()=> {
+					var package = require('./package.json');
+					if (!package?.scripts['deploy:pre']) return; // No pre-deploy script to run
+					if (!cli.broadcast) return utils.log.skipped('Running pre-deploy');
+
+					utils.log.heading('Running pre-deploy'));
+					return cli.broadcast && exec(['npm', 'run', 'deploy:pre'])
+						.catch(()=> { throw 'Failed `npm run deploy:pre`' })
+				})
 				// }}}
 				// Step: Fetch {{{
 				.then(()=> utils.log.heading(`Fetching changes from ${profile.repo}`))
@@ -397,10 +403,15 @@ Promise.resolve()
 				})
 				// }}}
 				// Step: `npm run deploy:post` {{{
-				.then(()=> cli.broadcast && utils.log.heading('Running post-deploy'))
-				.then(()=> cli.broadcast && exec(['npm', 'run', 'deploy:post'])
-					.catch(()=> { throw 'Failed `npm run deploy:post`' })
-				)
+				.then(()=> {
+					var package = require('./package.json');
+					if (!package?.scripts['deploy:post']) return; // No pre-deploy script to run
+					if (!cli.broadcast) return utils.log.skipped('Running pre-deploy');
+
+					utils.log.heading('Running pre-deploy'));
+					return cli.broadcast && exec(['npm', 'run', 'deploy:post'])
+						.catch(()=> { throw 'Failed `npm run deploy:post`' })
+				})
 				// }}}
 				// Semver + push tag on complete {{{
 				.then(()=> {
