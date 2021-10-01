@@ -85,6 +85,7 @@ Promise.resolve()
 					type: 'confirm',
 					name: 'confirm',
 					message: `Confirm run> ${cmdString}`,
+					initial: true,
 				})
 					.then(({confirm}) => {
 						if (confirm) {
