@@ -110,8 +110,8 @@ Promise.resolve()
 	// Doop bootstrap essential {{{
 	.then(()=> cli.verbose > 0 && utils.log.verbose('Setting up App core'))
 	.then(()=> app.setup())
-	.then(()=> cli.verbose > 0 && utils.log.verbose('Emitting "essencial" to app core'))
-	.then(()=> app.emit('essencial'))
+	.then(()=> cli.verbose > 0 && utils.log.verbose('Emitting "essential" to app core'))
+	.then(()=> app.emit('essential'))
 	// }}}
 	// Bootstrap {{{
 	.then(()=> {
