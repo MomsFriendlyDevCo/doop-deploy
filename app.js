@@ -382,6 +382,7 @@ Promise.resolve()
 								utils.log.note('PM2 processes already exists, restarting');
 								return exec(['pm2', 'restart', '--wait-ready', '--listen-timeout=10000', ...profile.pm2Names]);
 							} else {
+								// TODO: Code path for no existing server but also no deltas, so that a missing server can be deployed even when code has not changed
 								utils.log.note('PM2 processes do not already exist, starting');
 								return utils.promiseSeries(profile.pm2Names.map((pm2Name, offset) => ()=> {
 									var args = profile.pm2Args[pm2Name || 'default'];
