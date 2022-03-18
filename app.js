@@ -57,6 +57,9 @@ cli = cli
 	.option('--step', 'Step through each command that would be performed asking ahead of each run')
 	.option('--unattended', 'Implies: --no-force-color')
 	.option('-v, --verbose', 'Be verbose with output - specify multiple times to increase verbosity', (t, v) => v+1, 0)
+	.option('--force-packages', 'Force reinstall all packages only')
+	.option('--force-frontend', 'Force rebuild frontend only')
+	.option('--force-backend', 'Force restart backend only')
 	.parse(process.argv)
 	.opts()
 // }}}
@@ -327,17 +330,17 @@ Promise.resolve()
 				.then(()=> {
 					if (cli.force) return;
 					utils.log.heading('Post-update deltas:');
-					utils.log.point(colors.blue('Packages'), '-', deltas.after.packages > deltas.before.packages ? `has updated, needs ${colors.underline('reinstall')}` : 'no changes');
+					utils.log.point(colors.blue('Packages'), '-', deltas.after.packages > deltas.before.packages ? `has updated, needs ${colors.underline('reinstall')}` : cli.forcePackages ? `no changes but forced anyway, will ${colors.underline('reinstall')}` : 'no changes');
 					if (cli.verbose > 1) {
 						utils.log.verbose(' Pre-deploy=', deltas.before.packages);
 						utils.log.verbose('Post-deploy=', deltas.after.packages);
 					}
-					utils.log.point(colors.blue('Frontend'), '-', deltas.after.frontend > deltas.before.frontend ? `has updated, needs ${colors.underline('rebuild')}` : 'no changes');
+					utils.log.point(colors.blue('Frontend'), '-', deltas.after.frontend > deltas.before.frontend ? `has updated, needs ${colors.underline('rebuild')}` : cli.forceFrontend ? `no changes but forced anyway, will ${colors.underline('rebuild')}` : 'no changes');
 					if (cli.verbose > 1) {
 						utils.log.verbose(' Pre-deploy=', deltas.before.frontend);
 						utils.log.verbose('Post-deploy=', deltas.after.frontend);
 					}
-					utils.log.point(colors.blue('Backend '), '-', deltas.after.backend > deltas.before.backend ? `has updated, needs ${colors.underline('restart')}` : 'no changes');
+					utils.log.point(colors.blue('Backend '), '-', deltas.after.backend > deltas.before.backend ? `has updated, needs ${colors.underline('restart')}` : cli.forceBackend ? `no changes but forced anyway, will ${colors.underline('restart')}` : 'no changes');
 					if (cli.verbose > 1) {
 						utils.log.verbose(' Pre-deploy=', deltas.before.backend);
 						utils.log.verbose('Post-deploy=', deltas.after.backend);
@@ -346,12 +349,13 @@ Promise.resolve()
 						deltas.after.packages <= deltas.before.packages
 						&& deltas.after.backend <= deltas.before.backend
 						&& deltas.after.frontend <= deltas.before.frontend
+						&& !cli.forcePackages && !cli.forceFrontend && !cli.forceBackend
 					) utils.log.note('Nothing to do here - use `--force` if this is wrong');
 				})
 				// }}}
 				// Step: NPM install (if cli.force || deltas mismatch) {{{
 				.then(()=> {
-					if (!cli.force && deltas.after.packages == deltas.before.packages) return utils.log.skipped('Clean-install NPM packages');
+					if (!cli.force && !cli.forcePackages && deltas.after.packages == deltas.before.packages) return utils.log.skipped('Clean-install NPM packages');
 					utils.log.heading('Clean-install NPM packages');
 					return exec(['npm', 'clean-install'])
 						.catch(()=> { throw 'Failed `npm clean-install`' })
@@ -359,7 +363,7 @@ Promise.resolve()
 				// }}}
 				// Step: Frontend build (if cli.force || deltas mismatch) {{{
 				.then(()=> {
-					if (!cli.force && deltas.after.frontend == deltas.before.frontend) return utils.log.heading('Build frontend');
+					if (!cli.force && !cli.forceFrontend && deltas.after.frontend == deltas.before.frontend) return utils.log.heading('Build frontend');
 					utils.log.heading('Build frontend');
 					return exec(['npm', 'run', 'build'])
 						.catch(()=> { throw 'Failed `npm run build`' })
@@ -367,7 +371,7 @@ Promise.resolve()
 				// }}}
 				// Step: Backend restart (if cli.force || deltas mismatch) {{{
 				.then(()=> {
-					if (!cli.force && deltas.after.backend == deltas.before.backend) return utils.log.skipped('Restart backend processes');
+					if (!cli.force && !cli.forceBackend && deltas.after.backend == deltas.before.backend) return utils.log.skipped('Restart backend processes');
 					utils.log.heading('Restart backend processes');
 					return Promise.resolve()
 						.then(()=> exec(['pm2', 'show', profile.pm2Names[0]]) // Query PM2 if the first named process is actually running
@@ -423,7 +427,8 @@ Promise.resolve()
 						&& deltas.after.packages == deltas.before.packages
 						&& deltas.after.backend == deltas.before.backend
 						&& deltas.after.frontend == deltas.before.frontend
-					) return utils.log.skipped('Skipping Semver version bump - nothing has changed - use `--force` if this is wrong');
+						&& !cli.forcePackages && !cli.forceFrontend && !cli.forceBackend
+					) return utils.log.skipped('Skipping Semver version bump - nothing has changed - use `--force` (or `--force-*`) if this is wrong');
 
 					utils.log.heading('Commiting Semver version');
 					var version = require('./package.json').version;
