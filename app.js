@@ -238,7 +238,7 @@ Promise.resolve()
 
 					return exec(process.script)
 						.then(()=> { throw 'SKIP' }) // Stop promise chain and exit
-						.catch(()=> { throw `Error running script \`${process.script}\`` })
+						.catch(()=> { throw new Error(`Error running script \`${process.script}\``) })
 				})
 				// }}}
 				// Calculate BEFORE deltas {{{
@@ -258,7 +258,7 @@ Promise.resolve()
 
 					utils.log.heading('Running pre-deploy');
 					return cli.broadcast && exec(['npm', 'run', 'deploy:pre'])
-						.catch(()=> { throw 'Failed `npm run deploy:pre`' })
+						.catch(()=> { throw new Error('Failed `npm run deploy:pre`') })
 				})
 				// }}}
 				// Step: Fetch {{{
@@ -296,7 +296,7 @@ Promise.resolve()
 									utils.log.note(`Setting branch to latest tag ${matchingTag}`)
 									profile.branch = matchingTag;
 								})
-								.then(()=> { throw 'NOPE' })
+								.then(()=> { throw new Error('FIXME: Untested functionality') })
 							break;
 						default:
 							throw new Error(`Unknown special branch type "${profile.branch}"`);
@@ -358,7 +358,7 @@ Promise.resolve()
 					if (!cli.force && !cli.forcePackages && deltas.after.packages == deltas.before.packages) return utils.log.skipped('Clean-install NPM packages');
 					utils.log.heading('Clean-install NPM packages');
 					return exec(['npm', 'clean-install'])
-						.catch(()=> { throw 'Failed `npm clean-install`' })
+						.catch(()=> { throw new Error('Failed `npm clean-install`') })
 				})
 				// }}}
 				// Step: Frontend build (if cli.force || deltas mismatch) {{{
@@ -366,7 +366,7 @@ Promise.resolve()
 					if (!cli.force && !cli.forceFrontend && deltas.after.frontend == deltas.before.frontend) return utils.log.heading('Build frontend');
 					utils.log.heading('Build frontend');
 					return exec(['npm', 'run', 'build'])
-						.catch(()=> { throw 'Failed `npm run build`' })
+						.catch(()=> { throw new Error('Failed `npm run build`') })
 				})
 				// }}}
 				// Step: Backend restart (if cli.force || deltas mismatch) {{{
@@ -416,7 +416,7 @@ Promise.resolve()
 
 					utils.log.heading('Running post-deploy');
 					return cli.broadcast && exec(['npm', 'run', 'deploy:post'])
-						.catch(()=> { throw 'Failed `npm run deploy:post`' })
+						.catch(()=> { throw new Error('Failed `npm run deploy:post`') })
 				})
 				// }}}
 				// Semver + push tag on complete {{{
@@ -462,7 +462,7 @@ Promise.resolve()
 							if (!profile.semverPackage) return;
 							return Promise.resolve()
 								.then(()=> fs.promises.access('./package.json', fs.constants.R_OK | fs.constants.W_OK)
-									.catch(()=> { throw 'package.json is not writable to bump semver version' })
+									.catch(()=> { throw new Error('package.json is not writable to bump semver version') })
 								)
 								.then(()=> {
 									var package = require('./package.json');
