@@ -18,9 +18,18 @@ try {
 	process.env.DOOP_IGNORE_CMD_ARGS = 1; // Tell Doop we're loading it as a sub-process
 	process.env.DOOP_QUIET = 1; // Tell Doop not to output debugging messages
 
-	// FIXME: add 'node_modules/@doop/deploy/package.json'
 	if (glob.sync(['package.json', 'config/index.js']).length != 2) throw `Cannot determine project root directory from CWD: ${process.cwd()}`;
-	require(`${process.cwd()}/app/app.backend`);
+
+	// TODO: Determine version by reading something in package.json?
+	// Detecting Doop2/Doop3 and loading appropriate backend bootstrap
+	if (fs.existsSync(`${process.cwd()}/app/app.backend.js`)) {
+		if (cli.verbose > 0) utils.log.verbose('Bootstraping Doop3')
+		require(`${process.cwd()}/app/app.backend`);
+	} else {
+		if (cli.verbose > 0) utils.log.verbose('Attempting fallback bootstrap of Doop2')
+		require(`${process.cwd()}/app/index`);
+	}
+
 	if (!global.app) throw ('No global `app` object found');
 	if (!app.config.deploy.profiles) throw ('Doop deploy config not found in app.config.deploy.profiles');
 } catch (e) {
@@ -48,8 +57,8 @@ Object.entries(app.config.deploy.profiles)
 // Footer options
 cli = cli
 	.option('-f, --force', 'Force full deployments, do not automatically skip stages based on deltas')
-	.option('--repo [name]', 'Repository to use', 'origin')
-	.option('--branch [name]', 'Deploy a specific branch', 'master')
+	.option('--repo [name]', 'Repository to use')
+	.option('--branch [name]', 'Deploy a specific branch')
 	.option('--no-broadcast', 'Skip broadcast steps (`npm run deploy:pre` + `npm run deploy:post`)')
 	.option('--no-peers', 'Override setting of peer deployments')
 	.option('--no-force-color', 'Do not attempt to force color mode before running')
@@ -176,6 +185,7 @@ Promise.resolve()
 	.then(()=> utils.promiseSeries(
 		_(app.config.deploy.profiles)
 		.keys()
+		.filter(p => cli.all || cli[p])
 		.sortBy('sort')
 		.map(id => ()=> {
 			var deltas = {before: {}, after: {}}; // File stamps before and after `git pull`
@@ -252,7 +262,9 @@ Promise.resolve()
 				.then(()=> cli.verbose > 2 && utils.log.verbose('Deployment deltas', deltas))
 				// Step: `npm run deploy:pre` {{{
 				.then(()=> {
-					var package = require(`${profile.path}/package.json`);
+					// Lookup profile path relative to parent project
+					var resolvedPath = require.resolve(`${profile.path}/package.json`, {paths: [process.cwd()]});
+					var package = require(resolvedPath);
 					if (!package?.scripts['deploy:pre']) return; // No pre-deploy script to run
 					if (!cli.broadcast) return utils.log.skipped('Running pre-deploy');
 
@@ -304,7 +316,9 @@ Promise.resolve()
 				})
 				// }}}
 				// Step: Git branch switch {{{
-				.then(()=> exec(['git', 'branch', '--show-current'], {log: false, buffer: true})
+				// NOTE: Requires Git >=2.22
+				//.then(()=> exec(['git', 'branch', '--show-current'], {log: false, buffer: true})
+				.then(()=> exec(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], {log: false, buffer: true})
 					.then(branchName => {
 						if (branchName != profile.branch) { // Need to switch branch
 							// Use a different branch to current - switch
@@ -410,7 +424,9 @@ Promise.resolve()
 				// }}}
 				// Step: `npm run deploy:post` {{{
 				.then(()=> {
-					var package = require(`${profile.path}/package.json`);
+					// Lookup profile path relative to parent project
+					var resolvedPath = require.resolve(`${profile.path}/package.json`, {paths: [process.cwd()]});
+					var package = require(resolvedPath);
 					if (!package?.scripts['deploy:post']) return; // No pre-deploy script to run
 					if (!cli.broadcast) return utils.log.skipped('Running post-deploy');
 
