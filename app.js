@@ -23,10 +23,10 @@ try {
 	// TODO: Determine version by reading something in package.json?
 	// Detecting Doop2/Doop3 and loading appropriate backend bootstrap
 	if (fs.existsSync(`${process.cwd()}/app/app.backend.js`)) {
-		if (cli.verbose > 0) utils.log.verbose('Bootstraping Doop3')
+		console.log('Bootstrapping Doop3');
 		require(`${process.cwd()}/app/app.backend`);
 	} else {
-		if (cli.verbose > 0) utils.log.verbose('Attempting fallback bootstrap of Doop2')
+		console.log('Bootstrapping Doop2');
 		require(`${process.cwd()}/app/index`);
 	}
 
