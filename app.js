@@ -403,9 +403,12 @@ Promise.resolve()
 								// TODO: Code path for no existing server but also no deltas, so that a missing server can be deployed even when code has not changed (without using `--force` which also runs `npm ci`)
 								utils.log.note('PM2 processes do not already exist, starting');
 								return utils.promiseSeries(profile.pm2Names.map((pm2Name, offset) => ()=> {
-									var args = profile.pm2Args[pm2Name || 'default'];
+									var args = _.has(profile.pm2Args, pm2Name)
+										? profile.pm2Args[pm2Name]
+										: profile.pm2Args['default'];
 									if (!args) throw new Error(`Cannot find valid PM2 arguments for process "${pm2Name}"`);
-									args = args.map(arg => template(profile.pm2Name, {
+
+									args = args.map(arg => template(arg, {
 										_,
 										semver,
 										profile,
