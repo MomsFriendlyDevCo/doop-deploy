@@ -221,6 +221,7 @@ Promise.resolve()
 	.then(()=> utils.promiseSeries(
 		_(app.config.deploy.profiles)
 		.keys()
+		.filter(p => cli.all || cli[p])
 		.sortBy('sort')
 		.map(id => ()=> {
 			var deltas = {before: {}, after: {}}; // File stamps before and after `git pull`
@@ -297,7 +298,9 @@ Promise.resolve()
 				.then(()=> cli.verbose > 2 && utils.log.verbose('Deployment deltas', deltas))
 				// Step: `npm run deploy:pre` {{{
 				.then(()=> {
-					var package = require(`${profile.path}/package.json`);
+					// Lookup profile path relative to parent project
+					var resolvedPath = require.resolve(`${profile.path}/package.json`, {paths: [process.cwd()]});
+					var package = require(resolvedPath);
 					if (!package?.scripts['deploy:pre']) return; // No pre-deploy script to run
 					if (!cli.broadcast) return utils.log.skipped('Running pre-deploy');
 
@@ -349,7 +352,9 @@ Promise.resolve()
 				})
 				// }}}
 				// Step: Git branch switch {{{
-				.then(()=> exec(['git', 'branch', '--show-current'], {log: false, buffer: true})
+				// NOTE: Requires Git >=2.22
+				//.then(()=> exec(['git', 'branch', '--show-current'], {log: false, buffer: true})
+				.then(()=> exec(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], {log: false, buffer: true})
 					.then(branchName => {
 						if (branchName != profile.branch) { // Need to switch branch
 							// Use a different branch to current - switch
@@ -434,9 +439,12 @@ Promise.resolve()
 								// TODO: Code path for no existing server but also no deltas, so that a missing server can be deployed even when code has not changed (without using `--force` which also runs `npm ci`)
 								utils.log.note('PM2 processes do not already exist, starting');
 								return utils.promiseSeries(profile.pm2Names.map((pm2Name, offset) => ()=> {
-									var args = profile.pm2Args[pm2Name || 'default'];
+									var args = _.has(profile.pm2Args, pm2Name)
+										? profile.pm2Args[pm2Name]
+										: profile.pm2Args['default'];
 									if (!args) throw new Error(`Cannot find valid PM2 arguments for process "${pm2Name}"`);
-									args = args.map(arg => template(profile.pm2Name, {
+
+									args = args.map(arg => template(arg, {
 										_,
 										semver,
 										profile,
@@ -455,7 +463,9 @@ Promise.resolve()
 				// }}}
 				// Step: `npm run deploy:post` {{{
 				.then(()=> {
-					var package = require(`${profile.path}/package.json`);
+					// Lookup profile path relative to parent project
+					var resolvedPath = require.resolve(`${profile.path}/package.json`, {paths: [process.cwd()]});
+					var package = require(resolvedPath);
 					if (!package?.scripts['deploy:post']) return; // No pre-deploy script to run
 					if (!cli.broadcast) return utils.log.skipped('Running post-deploy');
 
