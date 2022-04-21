@@ -2,77 +2,117 @@
 
 var _ = require('lodash');
 var alphabet = 'abcdefghijklmnopqrstuvwxyz';
+var debug = require('debug')('deploy');
 var colors = require('chalk');
 var commander = require('commander');
 var commanderExtras = require('commander-extras');
 var enquirer = require('enquirer');
 var exec = require('@momsfriendlydevco/exec');
 var glob = require('globby');
-var fs = require('fs');
+var fs = require('node:fs');
+var fspath = require('node:path');
+var ini = require('ini');
+var os = require('node:os');
 var semver = require('semver');
 var template = require('@momsfriendlydevco/template');
 var utils = require('./lib/utils');
 
-// Bootstrap: Load Doop deploy config {{{
-try {
-	process.env.DOOP_IGNORE_CMD_ARGS = 1; // Tell Doop we're loading it as a sub-process
-	process.env.DOOP_QUIET = 1; // Tell Doop not to output debugging messages
-
-	// FIXME: add 'node_modules/@doop/deploy/package.json'
-	if (glob.sync(['package.json', 'config/index.js']).length != 2) throw `Cannot determine project root directory from CWD: ${process.cwd()}`;
-	require(`${process.cwd()}/app/app.backend`);
-	if (!global.app) throw ('No global `app` object found');
-	if (!app.config.deploy.profiles) throw ('Doop deploy config not found in app.config.deploy.profiles');
-} catch (e) {
-	console.warn(`Failed to load Doop core / deploy config - ${e.toString()}`);
-	process.exit(1);
-}
-// }}}
-
-// Bootstrap: Load commander CLI config {{{
-
-// Header options
-var cli = commander
-	.name('deploy')
-	.usage('<--all|--PROFILE> [other options]')
-	.description('Deploy Doop servers')
-	.option('--all', 'Deploy all server profiles');
-
-// Profiles
-Object.entries(app.config.deploy.profiles)
-	.filter(([id, profile]) => profile.enabled ?? true)
-	.forEach(([id, profile]) =>
-		cli.option(`--${id}`, `Deploy the ${profile.title} server`)
-	);
-
-// Footer options
-cli = cli
-	.option('-f, --force', 'Force full deployments, do not automatically skip stages based on deltas')
-	.option('--repo [name]', 'Repository to use', 'origin')
-	.option('--branch [name]', 'Deploy a specific branch', 'master')
-	.option('--no-broadcast', 'Skip broadcast steps (`npm run deploy:pre` + `npm run deploy:post`)')
-	.option('--no-peers', 'Override setting of peer deployments')
-	.option('--no-force-color', 'Do not attempt to force color mode before running')
-	.option('--dry-run', 'Dont actually perform any actions, just say what would run')
-	.option('--step', 'Step through each command that would be performed asking ahead of each run')
-	.option('--unattended', 'Implies: --no-force-color')
-	.option('-v, --verbose', 'Be verbose with output - specify multiple times to increase verbosity', (t, v) => v+1, 0)
-	.option('--force-packages', 'Force reinstall all packages only')
-	.option('--force-frontend', 'Force rebuild frontend only')
-	.option('--force-backend', 'Force restart backend only')
-	.parse(process.argv)
-	.opts()
-// }}}
+// Globals
+var cli = commander;
 
 Promise.resolve()
-	// Options processing {{{
+	// Parse ~/.doop-deploy INI file {{{
+	.then(()=> fs.promises.readFile(fspath.join(os.homedir(), '.doop-deploy'), 'UTF-8')
+		.then(buf => {
+			debug('Reading INI file');
+			return ini.parse(buf);
+		})
+		.then(parsedIni => Object.entries(parsedIni)
+			.filter(([key, val]) => { // Ignore dotted paths
+				if (/\./.test(key)) {
+					debug(`Ignoring dotted notation INI variable "${key}"="${val}"`);
+					return false
+				} else {
+					return true;
+				}
+			})
+			.forEach(([key, val]) => {
+				debug(`Set env variable "${key}"=${val}`);
+				process.env[key] = val;
+			})
+		)
+		.catch(()=> 0) // Ignore failed file reads - probably doesn't exist
+	)
+	// }}}
+	// Early CLI options processing {{{
 	.then(()=> {
-		if (cli.all) Object.keys(app.config.deploy.profiles)
-			.forEach(id => cli[id] = true);
-
 		if (cli.unattended)
 			cli.forceColor = false;
 
+		if (process.env.DOOP_DEPLOY_BASE) {
+			debug(`Switching directory to "${process.env.DOOP_DEPLOY_BASE}"`);
+			process.chdir(process.env.DOOP_DEPLOY_BASE);
+		}
+	})
+	// }}}
+	// Load Doop deploy config {{{
+	.then(()=> {
+		process.env.DOOP_IGNORE_CMD_ARGS = 1; // Tell Doop we're loading it as a sub-process
+		process.env.DOOP_QUIET = 1; // Tell Doop not to output debugging messages
+
+		// FIXME: add 'node_modules/@doop/deploy/package.json'
+		if (glob.sync(['package.json', 'config/index.js']).length != 2) throw `Cannot determine project root directory from CWD: ${process.cwd()}`;
+		require(`${process.cwd()}/app/app.backend`);
+		if (!global.app) throw ('No global `app` object found');
+		if (!app.config.deploy.profiles) throw ('Doop deploy config not found in app.config.deploy.profiles');
+	})
+	// }}}
+	// Commander config / ask for CLI parameters {{{
+	.then(()=> {
+		// Header options
+		cli
+			.name('deploy')
+			.usage('<--all|--PROFILE> [other options]')
+			.description('Deploy Doop servers')
+			.option('--all', 'Deploy all server profiles');
+
+		// Profiles
+		Object.entries(app.config.deploy.profiles)
+			.filter(([id, profile]) => profile.enabled ?? true)
+			.forEach(([id, profile]) =>
+				cli.option(`--${id}`, `Deploy the ${profile.title} server`)
+			);
+
+		// Footer options
+		cli = cli
+			.option('-f, --force', 'Force full deployments, do not automatically skip stages based on deltas')
+			.option('--repo [name]', 'Repository to use', 'origin')
+			.option('--branch [name]', 'Deploy a specific branch', 'master')
+			.option('--no-broadcast', 'Skip broadcast steps (`npm run deploy:pre` + `npm run deploy:post`)')
+			.option('--no-peers', 'Override setting of peer deployments')
+			.option('--no-force-color', 'Do not attempt to force color mode before running')
+			.option('-n, --dry-run', 'Dont actually perform any actions, just say what would run')
+			.option('--step', 'Step through each command that would be performed asking ahead of each run')
+			.option('--unattended', 'Implies: --no-force-color')
+			.option('-v, --verbose', 'Be verbose with output - specify multiple times to increase verbosity', (t, v) => v+1, 0)
+			.option('--force-packages', 'Force reinstall all packages only')
+			.option('--force-frontend', 'Force rebuild frontend only')
+			.option('--force-backend', 'Force restart backend only')
+			.note('If the `~/.doop-deply` INI file is present it can also specify environment variables in BaSH format')
+			.env('DOOP_DEPLOY_BASE', 'If running as a globa NPM, switch to this directory before trying to read config')
+			.env('DOOP_DEPLOY_PROFILE', 'If specified, set the profile to deploy from (only works if no profile is selected from the CLI flags)')
+			.parse(process.argv)
+			.opts()
+	})
+	// }}}
+	// Profile selection {{{
+	.then(()=> {
+		if (cli.all) Object.keys(app.config.deploy.profiles)
+			.forEach(id => cli[id] = true);
+	})
+	// }}}
+	// Post profile options {{{
+	.then(()=> {
 		if (cli.dryRun && cli.step) {
 			throw new Error('Cannot use --dry-run + --step, choose one or the other');
 		} else if (cli.dryRun) { // Override regular exec() with safe version if in dry run
@@ -106,7 +146,12 @@ Promise.resolve()
 	.then(()=> {
 		if (cli.all) return; // All profiles selected
 		if (!Object.keys(app.config.deploy.profiles).some(id => cli[id] === true)) {
-			throw `Select at least one profile: --all ${Object.keys(app.config.deploy.profiles).map(id => `--${id}`).join(' ')}`;
+			if (process.env.DOOP_DEPLOY_PROFILE) {
+				if (!app.config.deploy.profiles[process.env.DOOP_DEPLOY_PROFILE]) throw new Error(`Invalid ENV profile "${process.env.DOOP_DEPLOY_PROFILE}"`);
+				cli.verbose > 1 && utils.log.verbose(`Using profile from ENV "DOOP_DEPLOY_PROFILE"="${process.env.DOOP_DEPLOY_PROFILE}"`);
+			} else {
+				throw new Error(`Select at least one profile: --all ${Object.keys(app.config.deploy.profiles).map(id => `--${id}`).join(' ')}`);
+			}
 		}
 	})
 	// }}}
@@ -501,6 +546,7 @@ Promise.resolve()
 	.catch(e => {
 		console.warn(colors.red.bold('DEPLOY ERROR:'), e.toString());
 		if (cli.verbose > 1) utils.log.verbose('Raw error trace:', e);
+		debug('Raw error', e);
 		process.exit(1);
 	})
 	// }}}
