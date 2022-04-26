@@ -14,6 +14,9 @@ This project exposes an executable command line script `doop-deploy` which is us
 * Optional branch Semver + version bumping on successful deploy
 
 
+NOTE: For verbose debugging set the `DEBUG=deploy` environment variable as per the [Debug](https://github.com/debug-js/debug) config.
+
+
 Configuration
 -------------
 Configuration is read per-profile from the `app.config.deploy.profiles` object. Each key is the local ID of the profile with the object following the specification below.
