@@ -289,6 +289,7 @@ Promise.resolve()
 				// }}}
 				// Calculate BEFORE deltas {{{
 				.then(()=> !cli.force && utils.log.heading('Calculate pre-deploy deltas'))
+				// TODO: Include CSS files in delta calculation
 				.then(()=> cli.force || Promise.all([
 					utils.newestFile(['package.json', 'package-lock.json']).then(newest => deltas.before.packages = newest),
 					utils.newestFile('**/*.vue').then(newest => deltas.before.frontend = newest),
