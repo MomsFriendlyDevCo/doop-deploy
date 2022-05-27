@@ -17,6 +17,33 @@ This project exposes an executable command line script `doop-deploy` which is us
 NOTE: For verbose debugging set the `DEBUG=deploy` environment variable as per the [Debug](https://github.com/debug-js/debug) config.
 
 
+System-wide config
+------------------
+@Doop/Deploy generally reads from a Doop projects main config object but if the script is installed system-wide it will also check for a `~/.doop-deploy` INI file first.
+
+Any keys within this file are merged into the main ENV setup before processing anything else.
+
+An example of using `~/.doop-deploy` to specify a directory to change to before trying to read config:
+
+
+```
+# Change to site directory to read config
+DOOP_DEPLOY_BASE=/sites/acme.com
+```
+
+
+Environment Variables
+---------------------
+Environment variables are read from the current shell and the above `~/.doop-deploy` file before execution.
+
+
+| Variable              | Type     | Description                                                       |
+|-----------------------|----------|-------------------------------------------------------------------|
+| `DOOP_DEPLOY_BASE`    | `String` | Set the working direcotry before attempting to read in the config |
+| `DOOP_DEPLOY_PROFILE` | `String` | Profile to deploy if no CLI profile is selected                   |
+
+
+
 Configuration
 -------------
 Configuration is read per-profile from the `app.config.deploy.profiles` object. Each key is the local ID of the profile with the object following the specification below.
