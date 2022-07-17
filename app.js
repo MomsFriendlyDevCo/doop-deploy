@@ -406,7 +406,7 @@ Promise.resolve()
 				.then(()=> {
 					if (!cli.force && !cli.forcePackages && deltas.after.packages == deltas.before.packages) return utils.log.skipped('Clean-install NPM packages');
 					utils.log.heading('Clean-install NPM packages');
-					return exec(['npm', 'clean-install'])
+					return exec(['npm', 'clean-install', '--loglevel=http'])
 						.catch(()=> { throw new Error('Failed `npm clean-install`') })
 				})
 				// }}}
