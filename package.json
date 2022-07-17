@@ -1,6 +1,6 @@
 {
   "name": "@doop/deploy",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "All purpose Doop server deployment script",
   "main": "app.js",
   "bin": {
