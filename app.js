@@ -353,8 +353,6 @@ Promise.resolve()
 				})
 				// }}}
 				// Step: Git branch switch {{{
-				// NOTE: Requires Git >=2.22
-				//.then(()=> exec(['git', 'branch', '--show-current'], {log: false, buffer: true})
 				.then(()=> exec(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], {log: false, buffer: true})
 					.then(branchName => {
 						if (branchName != profile.branch) { // Need to switch branch
