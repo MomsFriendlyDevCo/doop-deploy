@@ -18,7 +18,7 @@ var template = require('@momsfriendlydevco/template');
 var utils = require('./lib/utils');
 
 // Globals
-var cli = commander;
+var cli = commanderExtras();
 
 Promise.resolve()
 	// Parse ~/.doop-deploy INI file {{{
