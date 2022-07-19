@@ -454,7 +454,9 @@ Promise.resolve()
 										},
 									}));
 
-									return exec(['pm2', 'start', `--name=${pm2Name}`, '--time', 'server/index.js', '--', ...args]);
+									return exec(['pm2', 'start', `--name=${pm2Name}`, '--time', 'server/index.js', '--', ...args], {
+										env: _.pickBy(process.env, (v, k) => !k.startsWith('DOOP_')), // Strip all DOOP_ args to sub-process config (otherwise stuff like DOOP_IGNORE_CMD_ARGS and other side-effect stuff gets passed)
+									});
 								}));
 							}
 						})
