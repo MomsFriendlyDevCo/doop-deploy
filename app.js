@@ -238,12 +238,11 @@ Promise.resolve()
 				env: {},
 				semver: false,
 				semverPackage: true,
-				pm2Name: '${profile.id}-${process.alpha}',
+				pm2Name: '${id}-${process.alpha}',
 				pm2Names: [],
 				pm2Args: {
 					default: [
-						// FIXME: Using "profile" to define "profile"
-						'-e', profile,
+						'-e', id,
 					],
 				},
 			});
