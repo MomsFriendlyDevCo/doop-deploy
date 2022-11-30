@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MomsFriendlyDevCo/doop-deloy.git"
+    "url": "git+https://github.com/MomsFriendlyDevCo/doop-deploy.git"
   },
   "keywords": [
     "doop",
@@ -18,9 +18,9 @@
   "author": "Matt Carter <m@ttcarter.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/MomsFriendlyDevCo/doop-deloy/issues"
+    "url": "https://github.com/MomsFriendlyDevCo/doop-deploy/issues"
   },
-  "homepage": "https://github.com/MomsFriendlyDevCo/doop-deloy#readme",
+  "homepage": "https://github.com/MomsFriendlyDevCo/doop-deploy#readme",
   "engineStrict": true,
   "engines": {
     "node": ">=14.8.0"
